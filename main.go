@@ -31,7 +31,7 @@ type ShindanObj struct {
 	URL   string `json:"url"`
 }
 
-// GetShindans retrieves corona stats in json form
+// GetShindans retrieves shindan list in json form
 func GetShindans(url string) (map[int]ShindanObj, error) {
 
 	resp, err := http.Get(url)
