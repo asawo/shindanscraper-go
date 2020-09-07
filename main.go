@@ -9,18 +9,12 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// ShindanObj is a map of shindan title and urls
-type ShindanObj struct {
-	Title string `json:"title"`
-	URL   string `json:"url"`
-}
-
 func main() {
 	shindans, err := GetShindans("https://shindanmaker.com/c/list?mode=hot")
 	if err != nil {
 		log.Println(err)
 	}
-	shindanData, err := json.MarshalIndent(shindans, "", "	")
+	shindanData, err := json.MarshalIndent(shindans, "", "  ")
 	if err != nil {
 		log.Println(err)
 	}
@@ -29,6 +23,12 @@ func main() {
 
 	fmt.Println("🔥 Top 10 Hot Shindans 🔥")
 	fmt.Printf("%v", jsonShindan)
+}
+
+// ShindanObj is a map of shindan title and urls
+type ShindanObj struct {
+	Title string `json:"title"`
+	URL   string `json:"url"`
 }
 
 // GetShindans retrieves corona stats in json form
@@ -47,7 +47,6 @@ func GetShindans(url string) (map[int]ShindanObj, error) {
 
 	shindanMap := make(map[int]ShindanObj)
 
-	// Save each .list_title's title and url into ShindanObj
 	doc.Find(".list_title").Each(func(i int, s *goquery.Selection) {
 		if i < 10 {
 			link, _ := s.Attr("href")
