@@ -2,20 +2,28 @@ package slackbot
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"shindanscraper-go/scraper"
 
-	"github.com/nlopes/slack"
+	"github.com/kelseyhightower/envconfig"
+	"github.com/slack-go/slack"
 )
+
+type config struct {
+	SigningSecret string `envconfig:"SIGNING_SECRET" required:"true"`
+}
 
 // SlashCommandHandler handles the slash command from shindanbot
 func SlashCommandHandler(w http.ResponseWriter, r *http.Request) {
-	signingSecret := os.Getenv("SIGNING_SECRET")
+	var env config
+	if err := envconfig.Process("", &env); err != nil {
+		log.Println(err)
+	}
+
+	signingSecret := env.SigningSecret
 
 	verifier, err := slack.NewSecretsVerifier(r.Header, signingSecret)
 	if err != nil {
@@ -41,18 +49,45 @@ func SlashCommandHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println(err)
 		}
-		shindanData, err := json.MarshalIndent(shindans, "", "  ")
-		if err != nil {
-			log.Println(err)
-		}
-		jsonShindan := string(shindanData)
-		fmt.Print(jsonShindan)
+
+		// jsonShindan, _ := json.MarshalIndent(shindans, "", "    ")
+		// fmt.Println(string(jsonShindan))
+
+		msgBlock := CreateBlock(shindans)
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(shindanData)
+		w.Write(msgBlock)
+		return
 
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+// CreateBlock creates slack message block from map object
+func CreateBlock(shindan map[int]scraper.ShindanObj) []byte {
+
+	divSection := slack.NewDividerBlock()
+
+	headerText := slack.NewTextBlockObject("mrkdwn", "*Header*", false, false)
+	headerSection := slack.NewSectionBlock(headerText, nil, nil, nil)
+
+	rankOne := slack.NewTextBlockObject("mrkdwn", "test text", false, false)
+	rankOneSection := slack.NewSectionBlock(rankOne, nil, nil, nil)
+
+	// Build Message with blocks created above
+	msg := slack.NewBlockMessage(
+		headerSection,
+		divSection,
+		rankOneSection,
+		divSection,
+	)
+
+	b, err := json.MarshalIndent(msg, "", "    ")
+	if err != nil {
+		log.Printf("Error marshalling json: %v", err)
+	}
+
+	return b
 }
