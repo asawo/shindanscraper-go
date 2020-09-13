@@ -2,11 +2,13 @@ package slackbot
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"shindanscraper-go/scraper"
+	"strings"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/slack-go/slack"
@@ -47,11 +49,8 @@ func SlashCommandHandler(w http.ResponseWriter, r *http.Request) {
 	case "/shindan":
 		shindans, err := scraper.GetShindans("https://shindanmaker.com/c/list?mode=hot")
 		if err != nil {
-			log.Println(err)
+			log.Printf("[ERROR] Error getting Shindans: %v", err)
 		}
-
-		// jsonShindan, _ := json.MarshalIndent(shindans, "", "    ")
-		// fmt.Println(string(jsonShindan))
 
 		msgBlock := CreateBlock(shindans)
 
@@ -70,23 +69,26 @@ func CreateBlock(shindan map[int]scraper.ShindanObj) []byte {
 
 	divSection := slack.NewDividerBlock()
 
-	headerText := slack.NewTextBlockObject("mrkdwn", "*Header*", false, false)
-	headerSection := slack.NewSectionBlock(headerText, nil, nil, nil)
+	// Create listSection from ShindanObj
+	var t []string
+	t = append(t, "🔥 *Top 10 Hottest Shindans* 🔥\n")
+	for i := 1; i <= 10; i++ {
+		t = append(t, fmt.Sprintf("\n%v. <%v|%v>", i, shindan[i].URL, shindan[i].Title))
+	}
+	sh := strings.Join(t, "")
 
-	rankOne := slack.NewTextBlockObject("mrkdwn", "test text", false, false)
-	rankOneSection := slack.NewSectionBlock(rankOne, nil, nil, nil)
+	shindanList := slack.NewTextBlockObject("mrkdwn", sh, false, false)
+	listSection := slack.NewSectionBlock(shindanList, nil, nil)
 
-	// Build Message with blocks created above
 	msg := slack.NewBlockMessage(
-		headerSection,
 		divSection,
-		rankOneSection,
+		listSection,
 		divSection,
 	)
 
 	b, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
-		log.Printf("Error marshalling json: %v", err)
+		fmt.Println(err)
 	}
 
 	return b
