@@ -1,4 +1,4 @@
-package slackbot
+package main
 
 import (
 	"encoding/json"
@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"shindanscraper-go/scraper"
 	"strings"
 
 	"github.com/kelseyhightower/envconfig"
@@ -47,7 +46,7 @@ func SlashCommandHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch s.Command {
 	case "/shindan":
-		shindans, err := scraper.GetShindans("https://shindanmaker.com/c/list?mode=hot")
+		shindans, err := GetShindans("https://shindanmaker.com/c/list?mode=hot")
 		if err != nil {
 			log.Printf("[ERROR] Error getting Shindans: %v", err)
 		}
@@ -65,7 +64,7 @@ func SlashCommandHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateBlock creates slack message block from map object
-func CreateBlock(shindan map[int]scraper.ShindanObj) []byte {
+func CreateBlock(shindan map[int]ShindanObj) []byte {
 
 	divSection := slack.NewDividerBlock()
 
@@ -73,7 +72,7 @@ func CreateBlock(shindan map[int]scraper.ShindanObj) []byte {
 	var t []string
 	t = append(t, "🔥 *Top 10 Hottest Shindans* 🔥\n")
 	for i := 1; i <= 10; i++ {
-		t = append(t, fmt.Sprintf("\n%v. <%v|%v>", i, shindan[i].URL, shindan[i].Title))
+		t = append(t, fmt.Sprintf("\n*%v*. <%v|%v>", i, shindan[i].URL, shindan[i].Title))
 	}
 	sh := strings.Join(t, "")
 
